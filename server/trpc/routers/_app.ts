@@ -1,8 +1,10 @@
 import { createTRPCRouter } from "@/server/trpc/trpc";
-import { reviewQueueRouter } from "@/server/trpc/routers/reviewQueue";
+import { dashboardRouter } from "./dashboard";
+import { reviewerAuthRouter } from "./reviewerAuth";
 
 export const appRouter = createTRPCRouter({
-  reviewQueue: reviewQueueRouter,
+  reviewerAuth: reviewerAuthRouter,
+  dashboard: dashboardRouter,
 });
 
 export type AppRouter = typeof appRouter;

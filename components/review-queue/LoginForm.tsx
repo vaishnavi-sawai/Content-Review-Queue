@@ -11,14 +11,14 @@ import { trpc } from "@/server/trpc/client";
 import { loginFormSchema, type LoginFormValues } from "./LoginForm.schema";
 import type { ReviewerSession } from "./types";
 
-type AuthenticateOutput = inferRouterOutputs<AppRouter>["reviewQueue"]["authenticate"];
+type AuthenticateOutput = inferRouterOutputs<AppRouter>["reviewerAuth"]["authenticate"];
 
 interface LoginFormProps {
   onAuthenticated: (session: ReviewerSession) => void;
 }
 
 export function LoginForm({ onAuthenticated }: LoginFormProps) {
-  const authenticateMutation = trpc.reviewQueue.authenticate.useMutation({
+  const authenticateMutation = trpc.reviewerAuth.authenticate.useMutation({
     onSuccess(result: AuthenticateOutput) {
       onAuthenticated({
         reviewerCode: result.reviewerCode,

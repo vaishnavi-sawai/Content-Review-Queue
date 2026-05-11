@@ -3,36 +3,10 @@ import { TRPCError } from "@trpc/server";
 
 import { RESERVATION_WINDOW_MS } from "@/services/review-queue/constants";
 import { releaseExpiredReservations } from "@/services/review-queue/releaseExpiredReservations";
-import {
-  authenticateReviewerSchema,
-  ticketIdSchema,
-} from "@/server/trpc/routers/reviewQueue.schemas";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/trpc/trpc";
+import { ticketIdSchema } from "@/server/trpc/routers/dashboard.schemas";
+import { createTRPCRouter, protectedProcedure } from "@/server/trpc/trpc";
 
-export const reviewQueueRouter = createTRPCRouter({
-  authenticate: publicProcedure
-    .input(authenticateReviewerSchema)
-    .mutation(async ({ ctx, input }) => {
-      const reviewer = await ctx.prisma.reviewer.findFirst({
-        where: {
-          reviewerCode: input.reviewerCode,
-          locale: input.locale,
-        },
-      });
-
-      if (!reviewer) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Reviewer not found for selected locale.",
-        });
-      }
-
-      return {
-        reviewerCode: reviewer.reviewerCode,
-        locale: reviewer.locale,
-      };
-    }),
-
+export const dashboardRouter = createTRPCRouter({
   availableTickets: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
     await releaseExpiredReservations(ctx.prisma, now);

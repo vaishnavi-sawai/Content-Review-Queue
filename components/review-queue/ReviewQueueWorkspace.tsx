@@ -15,34 +15,34 @@ interface ReviewQueueWorkspaceProps {
 export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspaceProps) {
   const trpcUtils = trpc.useUtils();
 
-  const availableTicketsQuery = trpc.reviewQueue.availableTickets.useQuery(undefined, {
+  const availableTicketsQuery = trpc.dashboard.availableTickets.useQuery(undefined, {
     refetchInterval: 15_000,
   });
 
-  const activeReservationsQuery = trpc.reviewQueue.activeReservations.useQuery(undefined, {
+  const activeReservationsQuery = trpc.dashboard.activeReservations.useQuery(undefined, {
     refetchInterval: 3_000,
   });
 
-  const metricsQuery = trpc.reviewQueue.metrics.useQuery(undefined, {
+  const metricsQuery = trpc.dashboard.metrics.useQuery(undefined, {
     refetchInterval: 5_000,
   });
 
-  const reserveMutation = trpc.reviewQueue.reserveTicket.useMutation({
+  const reserveMutation = trpc.dashboard.reserveTicket.useMutation({
     onSuccess: async () => {
       await Promise.all([
-        trpcUtils.reviewQueue.availableTickets.invalidate(),
-        trpcUtils.reviewQueue.activeReservations.invalidate(),
-        trpcUtils.reviewQueue.metrics.invalidate(),
+        trpcUtils.dashboard.availableTickets.invalidate(),
+        trpcUtils.dashboard.activeReservations.invalidate(),
+        trpcUtils.dashboard.metrics.invalidate(),
       ]);
     },
   });
 
-  const confirmMutation = trpc.reviewQueue.confirmTicket.useMutation({
+  const confirmMutation = trpc.dashboard.confirmTicket.useMutation({
     onSuccess: async () => {
       await Promise.all([
-        trpcUtils.reviewQueue.availableTickets.invalidate(),
-        trpcUtils.reviewQueue.activeReservations.invalidate(),
-        trpcUtils.reviewQueue.metrics.invalidate(),
+        trpcUtils.dashboard.availableTickets.invalidate(),
+        trpcUtils.dashboard.activeReservations.invalidate(),
+        trpcUtils.dashboard.metrics.invalidate(),
       ]);
     },
   });

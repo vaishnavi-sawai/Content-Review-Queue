@@ -68,25 +68,25 @@ Potential improvements:
 
 All procedures are mounted at `/api/trpc`.
 
-- `reviewQueue.authenticate`
+- `dashboard.authenticate`
   - input: `{ reviewerCode: string, locale: Locale }`
   - validates reviewer identity for locale.
-- `reviewQueue.availableTickets`
+- `dashboard.availableTickets`
   - returns unassigned locale-scoped tickets.
-- `reviewQueue.reserveTicket`
+- `dashboard.reserveTicket`
   - input: `{ ticketId: string }`
   - reserves for authenticated reviewer for 20 minutes.
-- `reviewQueue.confirmTicket`
+- `dashboard.confirmTicket`
   - input: `{ ticketId: string }`
   - confirms active reservation before expiry.
-- `reviewQueue.activeReservations`
+- `dashboard.activeReservations`
   - returns all active reservations for current reviewer.
-- `reviewQueue.metrics`
+- `dashboard.metrics`
   - returns locale queue health snapshot (available, reserved, confirmed, released).
 
 ## Session Behavior
 
-- Sign-in authenticates once through `reviewQueue.authenticate`.
+- Sign-in authenticates once through `dashboard.authenticate`.
 - Reviewer session (`reviewerCode` + `locale`) is stored in a browser cookie (`review-queue-session`).
 - Sign-out clears the session cookie.
 
