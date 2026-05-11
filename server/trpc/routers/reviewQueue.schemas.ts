@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const authenticateReviewerSchema = z.object({
   reviewerCode: z.string().min(3),
-  locale: z.nativeEnum(Locale),
+  locale: z.enum(Locale),
 });
 
 export const ticketIdSchema = z.object({

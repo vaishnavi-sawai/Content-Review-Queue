@@ -1,6 +1,6 @@
-import { Locale } from "@prisma/client";
+import { Locale, type Prisma, type PrismaClient } from "@prisma/client";
 
-import { prisma } from "@/services/db/prisma";
+type PrismaLikeClient = PrismaClient | Prisma.TransactionClient;
 
 const SEED_REVIEWERS: Array<{ reviewerCode: string; locale: Locale }> = [
   { reviewerCode: "reviewer-west-1", locale: Locale.WEST_COAST },
@@ -9,7 +9,7 @@ const SEED_REVIEWERS: Array<{ reviewerCode: string; locale: Locale }> = [
   { reviewerCode: "reviewer-south-1", locale: Locale.SOUTH },
 ];
 
-const SEED_TICKET_COUNT_PER_LOCALE = 8;
+const SEED_TICKET_COUNT_PER_LOCALE = 10;
 
 const LOCALE_NAME: Record<Locale, string> = {
   [Locale.WEST_COAST]: "West Coast",
@@ -18,10 +18,10 @@ const LOCALE_NAME: Record<Locale, string> = {
   [Locale.SOUTH]: "South",
 };
 
-export async function ensureSeedData() {
+export async function ensureSeedData(client: PrismaLikeClient) {
   await Promise.all(
     SEED_REVIEWERS.map((reviewer) =>
-      prisma.reviewer.upsert({
+      client.reviewer.upsert({
         where: { reviewerCode: reviewer.reviewerCode },
         update: { locale: reviewer.locale },
         create: reviewer,
@@ -38,7 +38,7 @@ export async function ensureSeedData() {
     })),
   );
 
-  await prisma.ticket.createMany({
+  await client.ticket.createMany({
     data: tickets,
     skipDuplicates: true,
   });
