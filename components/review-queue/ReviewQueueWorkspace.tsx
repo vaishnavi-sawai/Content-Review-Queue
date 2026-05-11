@@ -1,0 +1,94 @@
+"use client";
+
+import { LOCALE_LABELS } from "@/constants/review-queue";
+import { trpc } from "@/server/trpc/client";
+import { MetricsPanel } from "./MetricsPanel";
+import { ReservationPanel } from "./ReservationPanel";
+import { TicketList } from "./TicketList";
+import type { ReviewerSession } from "./types";
+
+interface ReviewQueueWorkspaceProps {
+  session: ReviewerSession;
+  onSignOut: () => void;
+}
+
+export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspaceProps) {
+  const trpcUtils = trpc.useUtils();
+
+  const availableTicketsQuery = trpc.reviewQueue.availableTickets.useQuery(undefined, {
+    refetchInterval: 15_000,
+  });
+
+  const activeReservationQuery = trpc.reviewQueue.activeReservation.useQuery(undefined, {
+    refetchInterval: 3_000,
+  });
+
+  const metricsQuery = trpc.reviewQueue.metrics.useQuery(undefined, {
+    refetchInterval: 5_000,
+  });
+
+  const reserveMutation = trpc.reviewQueue.reserveTicket.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        trpcUtils.reviewQueue.availableTickets.invalidate(),
+        trpcUtils.reviewQueue.activeReservation.invalidate(),
+        trpcUtils.reviewQueue.metrics.invalidate(),
+      ]);
+    },
+  });
+
+  const confirmMutation = trpc.reviewQueue.confirmTicket.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        trpcUtils.reviewQueue.availableTickets.invalidate(),
+        trpcUtils.reviewQueue.activeReservation.invalidate(),
+        trpcUtils.reviewQueue.metrics.invalidate(),
+      ]);
+    },
+  });
+
+  const errorMessage = reserveMutation.error?.message ?? confirmMutation.error?.message ?? null;
+  const activeReservation = activeReservationQuery.data;
+
+  return (
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-4 py-8">
+      <header className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <p className="text-sm text-zinc-500">Authenticated reviewer</p>
+        <h1 className="text-2xl font-semibold text-zinc-900">{session.reviewerCode}</h1>
+        <p className="text-sm text-zinc-700">Locale: {LOCALE_LABELS[session.locale]}</p>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="mt-3 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          Sign out
+        </button>
+      </header>
+
+      {errorMessage ? (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      ) : null}
+
+      <MetricsPanel metrics={metricsQuery.data} isLoading={metricsQuery.isLoading} />
+
+      {activeReservation ? (
+        <ReservationPanel
+          ticketId={activeReservation.ticket.id}
+          ticketTitle={activeReservation.ticket.title}
+          expiresAt={new Date(activeReservation.reservation.expiresAt).toISOString()}
+          onConfirm={(ticketId) => confirmMutation.mutate({ ticketId })}
+          isConfirming={confirmMutation.isPending}
+        />
+      ) : null}
+
+      <TicketList
+        tickets={availableTicketsQuery.data ?? []}
+        isLoading={availableTicketsQuery.isLoading}
+        reserveTicket={(ticketId) => reserveMutation.mutate({ ticketId })}
+        isReserving={reserveMutation.isPending}
+      />
+    </main>
+  );
+}

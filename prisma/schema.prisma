@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Locale {
+  WEST_COAST
+  EAST_COAST
+  MIDWEST
+  SOUTH
+}
+
+enum TicketStatus {
+  AVAILABLE
+  RESERVED
+  CONFIRMED
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONFIRMED
+  RELEASED
+}
+
+model Reviewer {
+  id           String        @id @default(cuid())
+  reviewerCode String        @unique
+  locale       Locale
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  reservations Reservation[]
+}
+
+model Ticket {
+  id                   String         @id @default(cuid())
+  seedKey              String?        @unique
+  title                String
+  description          String
+  locale               Locale
+  status               TicketStatus   @default(AVAILABLE)
+  currentReservationId String?        @unique
+  reservationExpiresAt DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  reservations         Reservation[]
+  currentReservation   Reservation?   @relation("CurrentReservation", fields: [currentReservationId], references: [id])
+
+  @@index([locale, status])
+  @@index([reservationExpiresAt])
+}
+
+model Reservation {
+  id         String            @id @default(cuid())
+  ticketId   String
+  reviewerId String
+  status     ReservationStatus @default(ACTIVE)
+  reservedAt DateTime          @default(now())
+  expiresAt  DateTime
+  confirmedAt DateTime?
+  releasedAt DateTime?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  ticket     Ticket            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  reviewer   Reviewer          @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  activeForTicket Ticket?      @relation("CurrentReservation")
+
+  @@index([ticketId, status])
+  @@index([reviewerId, status])
+  @@index([expiresAt, status])
+}

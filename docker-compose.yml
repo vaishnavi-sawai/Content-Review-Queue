@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pipin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pipinuser
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pipin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pipin_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pipinuser -d pipin"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pipin-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://pipinuser:password@postgres:5432/pipin?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npm run prisma:generate &&
+      npm run prisma:db:push &&
+      npm run seed &&
+      npm run dev -- --hostname 0.0.0.0 --port 3000"
+  re-queue-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pipin-re-queue-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://pipinuser:password@postgres:5432/pipin?schema=public
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: >
+      sh -c "npm run prisma:generate &&
+      npm run worker:queue"
+
+volumes:
+  pipin_postgres_data:
