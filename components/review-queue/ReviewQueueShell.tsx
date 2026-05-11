@@ -5,12 +5,23 @@ import { useState } from "react";
 import { LoginForm } from "./LoginForm";
 import { ReviewQueueWorkspace } from "./ReviewQueueWorkspace";
 import { TrpcProvider } from "./TrpcProvider";
+import {
+  clearReviewerSession,
+  loadReviewerSession,
+  saveReviewerSession,
+} from "./reviewerSessionStorage";
 import type { ReviewerSession } from "./types";
 
 export function ReviewQueueShell() {
-  const [session, setSession] = useState<ReviewerSession | null>(null);
+  const [session, setSession] = useState<ReviewerSession | null>(() => loadReviewerSession());
+
+  const handleAuthenticated = (nextSession: ReviewerSession) => {
+    saveReviewerSession(nextSession);
+    setSession(nextSession);
+  };
 
   const signOut = () => {
+    clearReviewerSession();
     setSession(null);
   };
 
@@ -18,7 +29,7 @@ export function ReviewQueueShell() {
     return (
       <TrpcProvider reviewerCode={null} locale={null}>
         <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col justify-center px-4 py-8">
-          <LoginForm onAuthenticated={setSession} />
+          <LoginForm onAuthenticated={handleAuthenticated} />
         </main>
       </TrpcProvider>
     );
