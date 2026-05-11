@@ -74,8 +74,9 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
       <MetricsPanel metrics={metricsQuery.data} isLoading={metricsQuery.isLoading} />
 
       {activeReservations.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-zinc-900">Active Reservations</h2>
+        <section className="rounded-xl border border-amber-200 bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-zinc-900">Reserved Tickets</h2>
+          <div className="mt-3 space-y-3">
           {activeReservations.map((activeReservation) => (
             <ReservationPanel
               key={activeReservation.reservation.id}
@@ -86,6 +87,7 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
               isConfirming={confirmMutation.isPending}
             />
           ))}
+          </div>
         </section>
       ) : null}
 
