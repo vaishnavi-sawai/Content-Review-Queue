@@ -31,7 +31,7 @@ export async function ensureSeedData() {
 
   const tickets = Object.values(Locale).flatMap((locale) =>
     Array.from({ length: SEED_TICKET_COUNT_PER_LOCALE }).map((_, index) => ({
-      seedKey: `${locale}-ticket-${index + 1}`,
+      id: `seed-${locale.toLowerCase()}-${index + 1}`,
       title: `${LOCALE_NAME[locale]} Ticket ${index + 1}`,
       description: `Review content batch ${index + 1} for ${locale.toLowerCase().replace("_", " ")}.`,
       locale,

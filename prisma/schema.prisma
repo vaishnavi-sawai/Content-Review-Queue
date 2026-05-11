@@ -36,7 +36,6 @@ model Reviewer {
 
 model Ticket {
   id                   String         @id @default(cuid())
-  seedKey              String?        @unique
   title                String
   description          String
   locale               Locale

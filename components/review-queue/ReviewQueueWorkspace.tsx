@@ -19,7 +19,7 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
     refetchInterval: 15_000,
   });
 
-  const activeReservationQuery = trpc.reviewQueue.activeReservation.useQuery(undefined, {
+  const activeReservationsQuery = trpc.reviewQueue.activeReservations.useQuery(undefined, {
     refetchInterval: 3_000,
   });
 
@@ -31,7 +31,7 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
     onSuccess: async () => {
       await Promise.all([
         trpcUtils.reviewQueue.availableTickets.invalidate(),
-        trpcUtils.reviewQueue.activeReservation.invalidate(),
+        trpcUtils.reviewQueue.activeReservations.invalidate(),
         trpcUtils.reviewQueue.metrics.invalidate(),
       ]);
     },
@@ -41,14 +41,14 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
     onSuccess: async () => {
       await Promise.all([
         trpcUtils.reviewQueue.availableTickets.invalidate(),
-        trpcUtils.reviewQueue.activeReservation.invalidate(),
+        trpcUtils.reviewQueue.activeReservations.invalidate(),
         trpcUtils.reviewQueue.metrics.invalidate(),
       ]);
     },
   });
 
   const errorMessage = reserveMutation.error?.message ?? confirmMutation.error?.message ?? null;
-  const activeReservation = activeReservationQuery.data;
+  const activeReservations = activeReservationsQuery.data ?? [];
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-4 py-8">
@@ -73,14 +73,20 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
 
       <MetricsPanel metrics={metricsQuery.data} isLoading={metricsQuery.isLoading} />
 
-      {activeReservation ? (
-        <ReservationPanel
-          ticketId={activeReservation.ticket.id}
-          ticketTitle={activeReservation.ticket.title}
-          expiresAt={new Date(activeReservation.reservation.expiresAt).toISOString()}
-          onConfirm={(ticketId) => confirmMutation.mutate({ ticketId })}
-          isConfirming={confirmMutation.isPending}
-        />
+      {activeReservations.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-zinc-900">Active Reservations</h2>
+          {activeReservations.map((activeReservation) => (
+            <ReservationPanel
+              key={activeReservation.reservation.id}
+              ticketId={activeReservation.ticket.id}
+              ticketTitle={activeReservation.ticket.title}
+              expiresAt={new Date(activeReservation.reservation.expiresAt).toISOString()}
+              onConfirm={(ticketId) => confirmMutation.mutate({ ticketId })}
+              isConfirming={confirmMutation.isPending}
+            />
+          ))}
+        </section>
       ) : null}
 
       <TicketList

@@ -23,7 +23,7 @@ export function ReservationPanel({
 
   return (
     <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-      <h2 className="text-lg font-semibold text-zinc-900">Active Reservation</h2>
+      <h3 className="text-lg font-semibold text-zinc-900">Reserved Ticket</h3>
       <p className="mt-2 text-sm text-zinc-700">
         <span className="font-medium">{ticketTitle}</span> is reserved for you.
       </p>

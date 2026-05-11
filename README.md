@@ -74,8 +74,8 @@ All procedures are mounted at `/api/trpc`.
 - `reviewQueue.confirmTicket`
   - input: `{ ticketId: string }`
   - confirms active reservation before expiry.
-- `reviewQueue.activeReservation`
-  - returns active reservation for current reviewer, if any.
+- `reviewQueue.activeReservations`
+  - returns all active reservations for current reviewer.
 - `reviewQueue.metrics`
   - returns locale queue health snapshot (available, reserved, confirmed, released).
 

@@ -199,11 +199,11 @@ export const reviewQueueRouter = createTRPCRouter({
       });
     }),
 
-  activeReservation: protectedProcedure.query(async ({ ctx }) => {
+  activeReservations: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
     await releaseExpiredReservations(ctx.prisma, now);
 
-    const ticket = await ctx.prisma.ticket.findFirst({
+    const tickets = await ctx.prisma.ticket.findMany({
       where: {
         locale: ctx.reviewer.locale,
         status: TicketStatus.RESERVED,
@@ -215,16 +215,23 @@ export const reviewQueueRouter = createTRPCRouter({
       include: {
         currentReservation: true,
       },
+      orderBy: {
+        createdAt: "asc",
+      },
     });
 
-    if (!ticket || !ticket.currentReservation) {
-      return null;
-    }
+    return tickets.flatMap((ticket) => {
+      if (!ticket.currentReservation) {
+        return [];
+      }
 
-    return {
-      ticket,
-      reservation: ticket.currentReservation,
-    };
+      return [
+        {
+          ticket,
+          reservation: ticket.currentReservation,
+        },
+      ];
+    });
   }),
 
   metrics: protectedProcedure.query(async ({ ctx }) => {
