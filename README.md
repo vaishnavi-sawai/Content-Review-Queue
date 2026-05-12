@@ -178,3 +178,13 @@ LLM assistance was used for implementation acceleration:
 - Drafting parts of README and UI copy.
 
 All generated code was reviewed and manually adjusted for assignment requirements.
+
+<img width="1710" height="951" alt="Screenshot 2026-05-12 at 9 13 54 PM" src="https://github.com/user-attachments/assets/778f34c4-ec69-4538-ac91-ab68ecede9d5" />
+<img width="1710" height="957" alt="Screenshot 2026-05-12 at 9 12 52 PM" src="https://github.com/user-attachments/assets/82bc90f4-755d-4136-b0bf-28c4ef82085f" />
+<img width="1682" height="952" alt="Screenshot 2026-05-12 at 9 12 42 PM" src="https://github.com/user-attachments/assets/8b6006d2-f557-4d61-b5a4-6cb2902d06b7" />
+<img width="1708" height="1014" alt="Screenshot 2026-05-12 at 9 12 30 PM" src="https://github.com/user-attachments/assets/db2ef01e-b494-4839-8a4a-5a62f481f67c" />
+
+
+https://github.com/user-attachments/assets/93236dfc-4476-477f-9b92-807cac41595f
+
+
