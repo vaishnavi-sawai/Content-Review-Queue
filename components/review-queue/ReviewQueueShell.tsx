@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LoginForm } from "./LoginForm";
 import { ReviewQueueWorkspace } from "./ReviewQueueWorkspace";
@@ -13,7 +13,13 @@ import {
 import type { ReviewerSession } from "./types";
 
 export function ReviewQueueShell() {
-  const [session, setSession] = useState<ReviewerSession | null>(() => loadReviewerSession());
+  const [session, setSession] = useState<ReviewerSession | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setSession(loadReviewerSession());
+    setIsHydrated(true);
+  }, []);
 
   const handleAuthenticated = (nextSession: ReviewerSession) => {
     saveReviewerSession(nextSession);
@@ -24,6 +30,12 @@ export function ReviewQueueShell() {
     clearReviewerSession();
     setSession(null);
   };
+
+  if (!isHydrated) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col justify-center px-4 py-8" />
+    );
+  }
 
   if (!session) {
     return (
