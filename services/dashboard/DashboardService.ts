@@ -42,9 +42,6 @@ export class DashboardService {
   constructor(private readonly db: PrismaClient) {}
 
   async getAvailableTickets(locale: Locale) {
-    const now = new Date();
-    await releaseExpiredReservations(this.db, now);
-
     return this.db.ticket.findMany({
       where: {
         locale,
@@ -225,8 +222,6 @@ export class DashboardService {
 
   async getActiveReservations(params: { locale: Locale; reviewerId: string }) {
     const { locale, reviewerId } = params;
-    const now = new Date();
-    await releaseExpiredReservations(this.db, now);
 
     const tickets = await this.db.ticket.findMany({
       where: {
@@ -260,33 +255,50 @@ export class DashboardService {
   }
 
   async getMetrics(locale: Locale) {
-    const now = new Date();
-    await releaseExpiredReservations(this.db, now);
+    const rows = await this.db.$queryRaw<
+      [{ available: number; reserved: number; confirmed: number; released: number }]
+    >(Prisma.sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE "Ticket".status = ${TicketStatus.AVAILABLE}::"TicketStatus"
+        )::int AS available,
+        COUNT(*) FILTER (
+          WHERE "Ticket".status = ${TicketStatus.RESERVED}::"TicketStatus"
+        )::int AS reserved,
+        COUNT(*) FILTER (
+          WHERE "Ticket".status = ${TicketStatus.CONFIRMED}::"TicketStatus"
+        )::int AS confirmed,
+        COALESCE(
+          (
+            SELECT COUNT(*)::int
+            FROM "Reservation" r
+            INNER JOIN "Ticket" t ON t.id = r."ticketId"
+            WHERE t.locale = ${locale}::"Locale"
+              AND r.status = ${ReservationStatus.RELEASED}::"ReservationStatus"
+          ),
+          0
+        ) AS released
+      FROM "Ticket"
+      WHERE "Ticket".locale = ${locale}::"Locale"
+    `);
 
-    const [available, reserved, confirmed, released] = await Promise.all([
-      this.db.ticket.count({
-        where: { locale, status: TicketStatus.AVAILABLE },
-      }),
-      this.db.ticket.count({
-        where: { locale, status: TicketStatus.RESERVED },
-      }),
-      this.db.ticket.count({
-        where: { locale, status: TicketStatus.CONFIRMED },
-      }),
-      this.db.reservation.count({
-        where: {
-          ticket: { locale },
-          status: ReservationStatus.RELEASED,
-        },
-      }),
-    ]);
+    const row = rows[0];
+    if (!row) {
+      return {
+        locale,
+        available: 0,
+        reserved: 0,
+        confirmed: 0,
+        released: 0,
+      };
+    }
 
     return {
       locale,
-      available,
-      reserved,
-      confirmed,
-      released,
+      available: row.available,
+      reserved: row.reserved,
+      confirmed: row.confirmed,
+      released: row.released,
     };
   }
 }
