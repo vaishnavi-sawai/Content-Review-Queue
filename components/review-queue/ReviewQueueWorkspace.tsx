@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { LOCALE_LABELS } from "@/constants/review-queue";
 import { trpc } from "@/server/trpc/client";
@@ -8,8 +8,6 @@ import { MetricsPanel } from "./MetricsPanel";
 import { ReservationPanel } from "./ReservationPanel";
 import { TicketList } from "./TicketList";
 import type { ReviewerSession } from "./types";
-
-const POLL_INTERVAL_MS = 5_000;
 
 interface ReviewQueueWorkspaceProps {
   session: ReviewerSession;
@@ -19,23 +17,32 @@ interface ReviewQueueWorkspaceProps {
 export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspaceProps) {
   const trpcUtils = trpc.useUtils();
 
-  const availableTicketsQuery = trpc.dashboard.availableTickets.useQuery(undefined, {
-    refetchInterval: POLL_INTERVAL_MS,
-  });
+  const availableTicketsQuery = trpc.dashboard.availableTickets.useQuery();
 
-  const activeReservationsQuery = trpc.dashboard.activeReservations.useQuery(undefined, {
-    refetchInterval: POLL_INTERVAL_MS,
-  });
+  const activeReservationsQuery = trpc.dashboard.activeReservations.useQuery();
 
-  const metricsQuery = trpc.dashboard.metrics.useQuery(undefined, {
-    refetchInterval: POLL_INTERVAL_MS,
-  });
+  const metricsQuery = trpc.dashboard.metrics.useQuery();
 
   const invalidateDashboard = useCallback(() => {
     void trpcUtils.dashboard.availableTickets.invalidate();
     void trpcUtils.dashboard.activeReservations.invalidate();
     void trpcUtils.dashboard.metrics.invalidate();
   }, [trpcUtils]);
+
+  useEffect(() => {
+    const source = new EventSource("/api/dashboard/events");
+
+    const onDashboardUpdate = () => {
+      invalidateDashboard();
+    };
+
+    source.addEventListener("dashboard:update", onDashboardUpdate);
+
+    return () => {
+      source.removeEventListener("dashboard:update", onDashboardUpdate);
+      source.close();
+    };
+  }, [invalidateDashboard]);
 
   const reserveMutation = trpc.dashboard.reserveTicket.useMutation({
     onSuccess: invalidateDashboard,

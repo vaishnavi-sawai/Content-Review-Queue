@@ -6,6 +6,8 @@ import {
   type Locale,
 } from "@prisma/client";
 
+import { publishDashboardUpdate } from "@/lib/review-queue/dashboardEvents";
+
 export type ReleaseExpiredReservationsResult = {
   releasedCount: number;
   /** Locales whose queues may have changed (tickets re-queued or touched). */
@@ -81,8 +83,15 @@ export async function releaseExpiredReservations(
   client: PrismaLikeClient,
   now: Date,
 ): Promise<ReleaseExpiredReservationsResult> {
-  if (isPrismaClient(client)) {
-    return client.$transaction((tx) => releaseExpiredReservationsTx(tx, now));
+  if (!isPrismaClient(client)) {
+    return releaseExpiredReservationsTx(client, now);
   }
-  return releaseExpiredReservationsTx(client, now);
+
+  const result = await client.$transaction((tx) => releaseExpiredReservationsTx(tx, now));
+  if (result.releasedCount > 0) {
+    for (const locale of result.affectedLocales) {
+      publishDashboardUpdate(locale);
+    }
+  }
+  return result;
 }
