@@ -44,7 +44,6 @@ flowchart TB
   RQ -->|"queries + mutations"| API
   Pages --> UI
   API --> DS
-  DS --> Rel
   DS --> DB
   Boot --> Seed
   Seed --> DB
@@ -149,10 +148,8 @@ All procedures are mounted at `/api/trpc`.
 
 - **Locale isolation:** Reviewers can only operate on tickets in their assigned locale.
 - **Reservation window:** Each reservation expires after 20 minutes (`RESERVATION_WINDOW_MS`).
-- **Auto-release path:** Stale reservations are released in:
-  - request path (`available`, `reserve`, `confirm`, `metrics`), and
-  - background worker: Docker Compose service `re-queue-service` runs `npm run worker:queue` (`services/review-queue/worker.ts`, default interval 30s).
-- **Release atomicity:** `releaseExpiredReservations` runs reservation + ticket updates in a single DB transaction when called on the root Prisma client; when called inside an existing transaction (e.g. `reserveTicket`), it participates in that transaction. `instrumentation.ts` only runs seed bootstrap (`ensureSeedData`), not the release worker.
+- **Auto-release path:** Stale reservations are released by the background worker only. Docker Compose service `re-queue-service` runs `npm run worker:queue` (`services/review-queue/worker.ts`, default interval 30s).
+- **Release atomicity:** `releaseExpiredReservations` runs reservation + ticket updates in a single DB transaction. `instrumentation.ts` only runs seed bootstrap (`ensureSeedData`), not the release worker.
 - **Concurrency safety:** Reservation is performed in a transaction and guarded with conditional `updateMany` to avoid double-claim race.
 - **Dashboard refresh:** React Query polls dashboard queries every 3 seconds.
 - **Data model separation:** `Ticket`, `Reviewer`, `Reservation` are modeled independently; `Ticket` points to its current reservation.
@@ -163,12 +160,15 @@ All procedures are mounted at `/api/trpc`.
 - Confirmed tickets are terminal for this prototype.
 - Reviewer authentication is simulated with seeded reviewer identity.
 
-## Roadmap
+## Future Scope
 
 - Add explicit ticket completion endpoint and metrics.
-- Add optional realtime updates (WebSocket/pub-sub) for lower latency than polling.
 - Add more integration tests (metrics, polling cadence behavior).
 - Add horizontal scale support using external lock or queue.
+- Remove polling-based dashboard refresh and move to push updates.
+- Implement either WebSocket or SSE for real-time queue updates.
+- Keep React Query invalidation on pushed events so UI refreshes immediately.
+- Add reconnect handling and fallback polling only during temporary disconnects.
 
 ## LLM Usage Disclosure
 

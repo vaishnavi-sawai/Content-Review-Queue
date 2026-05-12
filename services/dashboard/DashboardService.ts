@@ -3,7 +3,6 @@ import "server-only";
 import { Prisma, ReservationStatus, TicketStatus, type Locale, type PrismaClient } from "@prisma/client";
 
 import { RESERVATION_WINDOW_MS } from "@/services/review-queue/constants";
-import { releaseExpiredReservations } from "@/services/review-queue/releaseExpiredReservations";
 
 import { DashboardDomainError } from "./DashboardDomainError";
 
@@ -64,8 +63,6 @@ export class DashboardService {
 
     try {
       const result = await this.db.$transaction(async (tx) => {
-        await releaseExpiredReservations(tx, now);
-
         await tx.$queryRaw(Prisma.sql`
           SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE
         `);
@@ -156,8 +153,6 @@ export class DashboardService {
     const now = new Date();
 
     const result = await this.db.$transaction(async (tx) => {
-      await releaseExpiredReservations(tx, now);
-
       const ticket = await tx.ticket.findUnique({
         where: { id: ticketId },
         include: {
