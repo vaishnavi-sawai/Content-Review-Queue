@@ -2,16 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Locale } from "@prisma/client";
-import type { inferRouterOutputs } from "@trpc/server";
 import { useForm } from "react-hook-form";
 
 import { LOCALE_LABELS } from "@/constants/review-queue";
-import type { AppRouter } from "@/server/trpc/routers/_app";
 import { trpc } from "@/server/trpc/client";
 import { loginFormSchema, type LoginFormValues } from "./LoginForm.schema";
 import type { ReviewerSession } from "./types";
-
-type AuthenticateOutput = inferRouterOutputs<AppRouter>["reviewerAuth"]["authenticate"];
 
 interface LoginFormProps {
   onAuthenticated: (session: ReviewerSession) => void;
@@ -19,7 +15,7 @@ interface LoginFormProps {
 
 export function LoginForm({ onAuthenticated }: LoginFormProps) {
   const authenticateMutation = trpc.reviewerAuth.authenticate.useMutation({
-    onSuccess(result: AuthenticateOutput) {
+    onSuccess(result) {
       onAuthenticated({
         reviewerCode: result.reviewerCode,
         locale: result.locale,

@@ -9,7 +9,7 @@ import {
   clearReviewerSession,
   loadReviewerSession,
   saveReviewerSession,
-} from "./reviewerSessionStorage";
+} from "@/lib/review-queue/reviewerSessionStorage";
 import type { ReviewerSession } from "./types";
 
 export function ReviewQueueShell() {

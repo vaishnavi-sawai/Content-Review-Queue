@@ -41,6 +41,18 @@ To stop the local stack:
 docker compose down
 ```
 
+## Integration tests
+
+Integration tests hit PostgreSQL (same schema as the app). Ensure the DB is up (for example `docker compose up -d postgres`), then:
+
+```bash
+npm run prisma:generate
+npm run prisma:db:push
+npm run test
+```
+
+`vitest` loads `.env` via `vitest.config.ts`. Use `TEST_DATABASE_URL` if you want a separate database from `DATABASE_URL`. Run `npm run test:watch` for watch mode.
+
 ## Seeded Reviewers
 
 - `reviewer-west-1` + `WEST_COAST`
@@ -95,9 +107,11 @@ All procedures are mounted at `/api/trpc`.
 - **Locale isolation:** Reviewers can only operate on tickets in their assigned locale.
 - **Reservation window:** Each reservation expires after 20 minutes (`RESERVATION_WINDOW_MS`).
 - **Auto-release path:** Stale reservations are released in:
-  - request path (`available`, `reserve`, `confirm`, `metrics`) and
-  - background interval worker (`instrumentation.ts`).
+  - request path (`available`, `reserve`, `confirm`, `metrics`), and
+  - background worker: Docker Compose service `re-queue-service` runs `npm run worker:queue` (`services/review-queue/worker.ts`, default interval 30s).
+- **Release atomicity:** `releaseExpiredReservations` runs reservation + ticket updates in a single DB transaction when called on the root Prisma client; when called inside an existing transaction (e.g. `reserveTicket`), it participates in that transaction. `instrumentation.ts` only runs seed bootstrap (`ensureSeedData`), not the release worker.
 - **Concurrency safety:** Reservation is performed in a transaction and guarded with conditional `updateMany` to avoid double-claim race.
+- **Dashboard refresh:** React Query polls dashboard queries every 5 seconds.
 - **Data model separation:** `Ticket`, `Reviewer`, `Reservation` are modeled independently; `Ticket` points to its current reservation.
 
 ## Assumptions
@@ -108,9 +122,9 @@ All procedures are mounted at `/api/trpc`.
 
 ## Roadmap
 
-- Add explicit ticket completion endpoint and SLA metrics.
-- Add SSE/WebSocket push for real-time ticket delivery.
-- Add integration tests with controlled clocks for expiry edge cases.
+- Add explicit ticket completion endpoint and metrics.
+- Add optional realtime updates (WebSocket/pub-sub) for lower latency than polling.
+- Add more integration tests (metrics, polling cadence behavior).
 - Add horizontal scale support using external lock or queue.
 
 ## LLM Usage Disclosure

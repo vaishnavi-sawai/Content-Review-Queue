@@ -1,11 +1,15 @@
 "use client";
 
+import { useCallback } from "react";
+
 import { LOCALE_LABELS } from "@/constants/review-queue";
 import { trpc } from "@/server/trpc/client";
 import { MetricsPanel } from "./MetricsPanel";
 import { ReservationPanel } from "./ReservationPanel";
 import { TicketList } from "./TicketList";
 import type { ReviewerSession } from "./types";
+
+const POLL_INTERVAL_MS = 5_000;
 
 interface ReviewQueueWorkspaceProps {
   session: ReviewerSession;
@@ -16,35 +20,29 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
   const trpcUtils = trpc.useUtils();
 
   const availableTicketsQuery = trpc.dashboard.availableTickets.useQuery(undefined, {
-    refetchInterval: 15_000,
+    refetchInterval: POLL_INTERVAL_MS,
   });
 
   const activeReservationsQuery = trpc.dashboard.activeReservations.useQuery(undefined, {
-    refetchInterval: 3_000,
+    refetchInterval: POLL_INTERVAL_MS,
   });
 
   const metricsQuery = trpc.dashboard.metrics.useQuery(undefined, {
-    refetchInterval: 5_000,
+    refetchInterval: POLL_INTERVAL_MS,
   });
 
+  const invalidateDashboard = useCallback(() => {
+    void trpcUtils.dashboard.availableTickets.invalidate();
+    void trpcUtils.dashboard.activeReservations.invalidate();
+    void trpcUtils.dashboard.metrics.invalidate();
+  }, [trpcUtils]);
+
   const reserveMutation = trpc.dashboard.reserveTicket.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        trpcUtils.dashboard.availableTickets.invalidate(),
-        trpcUtils.dashboard.activeReservations.invalidate(),
-        trpcUtils.dashboard.metrics.invalidate(),
-      ]);
-    },
+    onSuccess: invalidateDashboard,
   });
 
   const confirmMutation = trpc.dashboard.confirmTicket.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        trpcUtils.dashboard.availableTickets.invalidate(),
-        trpcUtils.dashboard.activeReservations.invalidate(),
-        trpcUtils.dashboard.metrics.invalidate(),
-      ]);
-    },
+    onSuccess: invalidateDashboard,
   });
 
   const errorMessage = reserveMutation.error?.message ?? confirmMutation.error?.message ?? null;
@@ -82,7 +80,7 @@ export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspac
               key={activeReservation.reservation.id}
               ticketId={activeReservation.ticket.id}
               ticketTitle={activeReservation.ticket.title}
-              expiresAt={new Date(activeReservation.reservation.expiresAt).toISOString()}
+              expiresAt={activeReservation.reservation.expiresAt}
               onConfirm={(ticketId) => confirmMutation.mutate({ ticketId })}
               isConfirming={confirmMutation.isPending}
             />
