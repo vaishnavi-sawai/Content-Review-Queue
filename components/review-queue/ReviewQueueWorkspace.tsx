@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 
 import { LOCALE_LABELS } from "@/constants/review-queue";
 import { trpc } from "@/server/trpc/client";
@@ -16,33 +16,25 @@ interface ReviewQueueWorkspaceProps {
 
 export function ReviewQueueWorkspace({ session, onSignOut }: ReviewQueueWorkspaceProps) {
   const trpcUtils = trpc.useUtils();
+  const pollIntervalMs = 3_000;
 
-  const availableTicketsQuery = trpc.dashboard.availableTickets.useQuery();
+  const availableTicketsQuery = trpc.dashboard.availableTickets.useQuery(undefined, {
+    refetchInterval: pollIntervalMs,
+  });
 
-  const activeReservationsQuery = trpc.dashboard.activeReservations.useQuery();
+  const activeReservationsQuery = trpc.dashboard.activeReservations.useQuery(undefined, {
+    refetchInterval: pollIntervalMs,
+  });
 
-  const metricsQuery = trpc.dashboard.metrics.useQuery();
+  const metricsQuery = trpc.dashboard.metrics.useQuery(undefined, {
+    refetchInterval: pollIntervalMs,
+  });
 
   const invalidateDashboard = useCallback(() => {
     void trpcUtils.dashboard.availableTickets.invalidate();
     void trpcUtils.dashboard.activeReservations.invalidate();
     void trpcUtils.dashboard.metrics.invalidate();
   }, [trpcUtils]);
-
-  useEffect(() => {
-    const source = new EventSource("/api/dashboard/events");
-
-    const onDashboardUpdate = () => {
-      invalidateDashboard();
-    };
-
-    source.addEventListener("dashboard:update", onDashboardUpdate);
-
-    return () => {
-      source.removeEventListener("dashboard:update", onDashboardUpdate);
-      source.close();
-    };
-  }, [invalidateDashboard]);
 
   const reserveMutation = trpc.dashboard.reserveTicket.useMutation({
     onSuccess: invalidateDashboard,

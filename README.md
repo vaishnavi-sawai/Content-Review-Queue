@@ -9,6 +9,49 @@ End-to-end prototype for locale-scoped ticket reservation and confirmation with 
 - Prisma + PostgreSQL for persistence
 - React Query for client state
 
+## Project flow
+
+High-level data and control flow (GitHub renders the Mermaid diagram below).
+
+```mermaid
+flowchart TB
+  subgraph Browser["Reviewer browser"]
+    UI["Dashboard UI"]
+    RQ["React Query"]
+  end
+
+  subgraph Compose["docker compose"]
+    subgraph Next["Next.js app container"]
+      Pages["App Router /dashboard"]
+      API["/api/trpc"]
+      Boot["instrumentation.ts"]
+    end
+
+    subgraph Core["Server code"]
+      DS["DashboardService"]
+      Seed["ensureSeedData"]
+      Rel["releaseExpiredReservations"]
+    end
+
+    subgraph Worker["Worker container"]
+      W["worker.ts interval sweep"]
+    end
+
+    DB[(PostgreSQL)]
+  end
+
+  UI --> RQ
+  RQ -->|"queries + mutations"| API
+  Pages --> UI
+  API --> DS
+  DS --> Rel
+  DS --> DB
+  Boot --> Seed
+  Seed --> DB
+  W --> Rel
+  Rel --> DB
+```
+
 ## Quick Start
 
 ```bash
@@ -111,7 +154,7 @@ All procedures are mounted at `/api/trpc`.
   - background worker: Docker Compose service `re-queue-service` runs `npm run worker:queue` (`services/review-queue/worker.ts`, default interval 30s).
 - **Release atomicity:** `releaseExpiredReservations` runs reservation + ticket updates in a single DB transaction when called on the root Prisma client; when called inside an existing transaction (e.g. `reserveTicket`), it participates in that transaction. `instrumentation.ts` only runs seed bootstrap (`ensureSeedData`), not the release worker.
 - **Concurrency safety:** Reservation is performed in a transaction and guarded with conditional `updateMany` to avoid double-claim race.
-- **Dashboard refresh:** React Query polls dashboard queries every 5 seconds.
+- **Dashboard refresh:** React Query polls dashboard queries every 3 seconds.
 - **Data model separation:** `Ticket`, `Reviewer`, `Reservation` are modeled independently; `Ticket` points to its current reservation.
 
 ## Assumptions
