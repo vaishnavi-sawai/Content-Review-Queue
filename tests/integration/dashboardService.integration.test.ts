@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DashboardService } from "@/services/dashboard/DashboardService";
 import { DashboardDomainError } from "@/services/dashboard/DashboardDomainError";
 import { RESERVATION_WINDOW_MS } from "@/services/review-queue/constants";
+import { releaseExpiredReservations } from "@/services/review-queue/releaseExpiredReservations";
 import { createPrismaTestClient } from "@/tests/prismaTestClient";
 
 const prisma = createPrismaTestClient();
@@ -264,7 +265,7 @@ describe("DashboardService", () => {
     await prisma.reviewer.delete({ where: { id: reviewer.id } });
   });
 
-  it("getAvailableTickets includes ticket again after expiry sweep", async () => {
+  it("getAvailableTickets lists ticket again after worker releases expired reservation", async () => {
     vi.useFakeTimers({ now: new Date("2026-07-01T08:00:00.000Z") });
 
     const suffix = crypto.randomUUID().slice(0, 8);
@@ -291,6 +292,8 @@ describe("DashboardService", () => {
     });
 
     vi.setSystemTime(new Date("2026-07-01T08:00:00.000Z").getTime() + RESERVATION_WINDOW_MS + 5_000);
+
+    await releaseExpiredReservations(prisma, new Date());
 
     const available = await service.getAvailableTickets(Locale.WEST_COAST);
     const ids = available.map((t) => t.id);
